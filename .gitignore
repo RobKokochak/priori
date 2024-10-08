@@ -1,0 +1,23 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Build output directory
+/bin/
+
+# Environment variables file (if you use one)
+.env
+
+# Log files
+*.log
