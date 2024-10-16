@@ -20,7 +20,7 @@ var taskCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		flags := cmd.Flags()
 
 		highPriority, _ := flags.GetBool("high")
@@ -39,11 +39,9 @@ var taskCmd = &cobra.Command{
 		if lowPriority {
 			priorityCount++
 		}
-
 		switch {
 		case priorityCount > 1:
-			// TODO: see if you can get this to print as an error as above
-			fmt.Println("Only one priority flag can be set at a time.")
+			return fmt.Errorf("Only one priority flag can be set at a time.")
 		case highPriority:
 			fmt.Println("This is a high priority task")
 		case mediumPriority:
@@ -53,6 +51,7 @@ var taskCmd = &cobra.Command{
 		default:
 			fmt.Println("No priority set (default: medium priority)")
 		}
+		return nil
 	},
 }
 
