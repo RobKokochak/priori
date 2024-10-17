@@ -51,6 +51,12 @@ var taskCmd = &cobra.Command{
 		default:
 			fmt.Println("No priority set (default: medium priority)")
 		}
+
+		err := WriteTaskToFile(args[0])
+		if err != nil {
+			return fmt.Errorf("failed to write task: %w", err)
+		}
+
 		return nil
 	},
 }
