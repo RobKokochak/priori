@@ -8,7 +8,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "priori",
-	Short: "A CLI task manager which features dynamic priority setting and ordering",
+	Short: "A CLI task manager with dynamic priority setting and ordering via flags, built to be fast and efficient.",
 	Long:  `Priori is a dynamic task manager.`,
 }
 
