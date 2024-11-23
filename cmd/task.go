@@ -8,6 +8,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type Priority string
+
+const (
+	High   Priority = "high"
+	Medium Priority = "medium"
+	Low    Priority = "low"
+	None   Priority = "none"
+)
+
 var taskCmd = &cobra.Command{
 	Use:   "task",
 	Short: "Add a task",
@@ -21,38 +30,31 @@ var taskCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		flags := cmd.Flags()
+		task := args[0]
+		var priority Priority
 
+		flags := cmd.Flags()
 		highPriority, _ := flags.GetBool("high")
 		mediumPriority, _ := flags.GetBool("medium")
 		lowPriority, _ := flags.GetBool("low")
 
-		fmt.Println("Task:", args[0])
-
-		priorityCount := 0
-		if highPriority {
-			priorityCount++
-		}
-		if mediumPriority {
-			priorityCount++
-		}
-		if lowPriority {
-			priorityCount++
-		}
-		switch {
-		case priorityCount > 1:
-			return fmt.Errorf("Only one priority flag can be set at a time.")
-		case highPriority:
-			fmt.Println("This is a high priority task")
-		case mediumPriority:
-			fmt.Println("This is a medium priority task")
-		case lowPriority:
-			fmt.Println("This is a low priority task")
-		default:
-			fmt.Println("No priority set (default: medium priority)")
+		if !highPriority && !mediumPriority && !lowPriority {
+			priority = None
+			fmt.Println("This task has no priority")
+		} else if highPriority && !mediumPriority && !lowPriority {
+			priority = High
+			fmt.Println("This task has high priority")
+		} else if !highPriority && mediumPriority && !lowPriority {
+			priority = Medium
+			fmt.Println("This task has medium priority")
+		} else if !highPriority && !mediumPriority && lowPriority {
+			priority = Low
+			fmt.Println("This task has low priority")
+		} else {
+			return fmt.Errorf("only one priority flag can be set for a task.")
 		}
 
-		err := writeTask(args[0])
+		err := writeTask(task, priority)
 		if err != nil {
 			return fmt.Errorf("failed to write task: %w", err)
 		}

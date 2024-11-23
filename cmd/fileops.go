@@ -9,10 +9,18 @@ import (
 // todo: allow user to set custom filename
 const TASKS_FILENAME = "tasks.md"
 
-// writing tasks
-func writeTask(task string) error {
+// ------ WRITE TASKS ------
+func writeTask(task string, priority Priority) error {
+	fmt.Println(task, priority)
+	filePath := getTasksFilePath()
+
+	fileExists := false
+	if _, err := os.Stat(filePath); err == nil {
+		fileExists = true
+	}
+
 	file, err := os.OpenFile(
-		getTasksFilePath(),
+		filePath,
 		os.O_APPEND|os.O_WRONLY|os.O_CREATE,
 		0644,
 	)
@@ -20,6 +28,15 @@ func writeTask(task string) error {
 		return fmt.Errorf("error opening tasks.md: %w", err)
 	}
 	defer file.Close()
+
+	if !fileExists {
+		_, err = file.WriteString("# Tasks\n\n")
+		if err != nil {
+			return fmt.Errorf("error writing heading to tasks.md: %w", err)
+		}
+	}
+
+	// todo: place task in correct priority list
 
 	_, err = file.WriteString("- " + task + "\n")
 	if err != nil {
