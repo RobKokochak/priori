@@ -9,9 +9,7 @@ import (
 // todo: allow user to set custom filename
 const TASKS_FILENAME = "tasks.md"
 
-// ------ WRITE TASKS ------
 func writeTask(task string, priority Priority) error {
-	fmt.Println(task, priority)
 	filePath := getTasksFilePath()
 
 	fileExists := false

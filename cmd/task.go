@@ -6,7 +6,16 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
+
+func init() {
+	rootCmd.AddCommand(taskCmd)
+	taskCmd.Flags().BoolP("help", "", false, "Help for the task command")
+	taskCmd.Flags().BoolP("high", "h", false, "Marks the task as a high priority")
+	taskCmd.Flags().BoolP("medium", "m", false, "Marks the task as a medium priority")
+	taskCmd.Flags().BoolP("low", "l", false, "Marks the task as a low priority")
+}
 
 type Priority string
 
@@ -31,42 +40,46 @@ var taskCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		task := args[0]
-		var priority Priority
-
-		flags := cmd.Flags()
-		highPriority, _ := flags.GetBool("high")
-		mediumPriority, _ := flags.GetBool("medium")
-		lowPriority, _ := flags.GetBool("low")
-
-		if !highPriority && !mediumPriority && !lowPriority {
-			priority = None
-			fmt.Println("This task has no priority")
-		} else if highPriority && !mediumPriority && !lowPriority {
-			priority = High
-			fmt.Println("This task has high priority")
-		} else if !highPriority && mediumPriority && !lowPriority {
-			priority = Medium
-			fmt.Println("This task has medium priority")
-		} else if !highPriority && !mediumPriority && lowPriority {
-			priority = Low
-			fmt.Println("This task has low priority")
-		} else {
-			return fmt.Errorf("only one priority flag can be set for a task.")
+		priority, getPriorityErr := getPriority(cmd.Flags())
+		if getPriorityErr != nil {
+			return getPriorityErr
 		}
-
-		err := writeTask(task, priority)
-		if err != nil {
-			return fmt.Errorf("failed to write task: %w", err)
+		writeTaskErr := writeTask(task, priority)
+		if writeTaskErr != nil {
+			return writeTaskErr
 		}
-
+		fmt.Println("task added")
 		return nil
 	},
 }
 
-func init() {
-	rootCmd.AddCommand(taskCmd)
-	taskCmd.Flags().BoolP("help", "", false, "Help for the task command")
-	taskCmd.Flags().BoolP("high", "h", false, "Marks the task as a high priority")
-	taskCmd.Flags().BoolP("medium", "m", false, "Marks the task as a medium priority")
-	taskCmd.Flags().BoolP("low", "l", false, "Marks the task as a low priority")
+func getPriority(flags *pflag.FlagSet) (Priority, error) {
+	highPriority, _ := flags.GetBool("high")
+	mediumPriority, _ := flags.GetBool("medium")
+	lowPriority, _ := flags.GetBool("low")
+
+	var priority Priority
+	priorityCount := 0
+
+	if highPriority {
+		priorityCount++
+		priority = High
+	}
+	if mediumPriority {
+		priorityCount++
+		priority = Medium
+	}
+	if lowPriority {
+		priorityCount++
+		priority = Low
+	}
+
+	switch priorityCount {
+	case 0:
+		return None, nil
+	case 1:
+		return priority, nil
+	default:
+		return None, fmt.Errorf("only one priority flag can be set for a task.")
+	}
 }
