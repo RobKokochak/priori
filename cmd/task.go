@@ -5,6 +5,9 @@ import (
 
 	"strings"
 
+	"github.com/RobKokochak/priori/internal/fileops"
+	"github.com/RobKokochak/priori/internal/models"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -16,15 +19,6 @@ func init() {
 	taskCmd.Flags().BoolP("medium", "m", false, "Marks the task as a medium priority")
 	taskCmd.Flags().BoolP("low", "l", false, "Marks the task as a low priority")
 }
-
-type Priority string
-
-const (
-	High   Priority = "high"
-	Medium Priority = "medium"
-	Low    Priority = "low"
-	None   Priority = "none"
-)
 
 var taskCmd = &cobra.Command{
 	Use:   "task",
@@ -44,42 +38,42 @@ var taskCmd = &cobra.Command{
 		if getPriorityErr != nil {
 			return getPriorityErr
 		}
-		writeTaskErr := writeTask(task, priority)
+		writeTaskErr := fileops.WriteTask(task, priority)
 		if writeTaskErr != nil {
 			return writeTaskErr
 		}
-		fmt.Println("task added")
+		fmt.Println("Task added")
 		return nil
 	},
 }
 
-func getPriority(flags *pflag.FlagSet) (Priority, error) {
+func getPriority(flags *pflag.FlagSet) (models.Priority, error) {
 	highPriority, _ := flags.GetBool("high")
 	mediumPriority, _ := flags.GetBool("medium")
 	lowPriority, _ := flags.GetBool("low")
 
-	var priority Priority
+	var priority models.Priority
 	priorityCount := 0
 
 	if highPriority {
 		priorityCount++
-		priority = High
+		priority = models.HighPriority
 	}
 	if mediumPriority {
 		priorityCount++
-		priority = Medium
+		priority = models.MediumPriority
 	}
 	if lowPriority {
 		priorityCount++
-		priority = Low
+		priority = models.LowPriority
 	}
 
 	switch priorityCount {
 	case 0:
-		return None, nil
+		return models.NoPriority, nil
 	case 1:
 		return priority, nil
 	default:
-		return None, fmt.Errorf("only one priority flag can be set for a task.")
+		return models.NoPriority, fmt.Errorf("only one priority flag can be set for a task.")
 	}
 }
