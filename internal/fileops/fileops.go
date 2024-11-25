@@ -22,7 +22,7 @@ func WriteTask(task string, priority models.Priority) error {
 
 	var fileContent string
 	if len(content) == 0 || strings.TrimSpace(string(content)) == "" {
-		fileContent = "# Tasks\n\n"
+		fileContent = "# Tasks\n"
 	} else {
 		fileContent = string(content)
 	}
@@ -44,7 +44,6 @@ func WriteTask(task string, priority models.Priority) error {
 			break
 		}
 	}
-
 	if targetHeader == "" {
 		return fmt.Errorf("invalid priority")
 	}
@@ -62,7 +61,7 @@ func WriteTask(task string, priority models.Priority) error {
 
 		beforeSection := fileContent[:insertIndex]
 		afterSection := fileContent[insertIndex:]
-		fileContent = beforeSection + targetHeader + "\n\n" + afterSection
+		fileContent = strings.TrimRight(beforeSection, "\n") + "\n\n" + targetHeader + "\n\n" + afterSection
 	}
 
 	lines := strings.Split(fileContent, "\n")
@@ -82,7 +81,8 @@ func WriteTask(task string, priority models.Priority) error {
 		}
 	}
 
-	err = os.WriteFile(filePath, []byte(strings.Join(newLines, "\n")), 0644)
+	fileContent = strings.TrimRight(strings.Join(newLines, "\n"), "\n") + "\n"
+	err = os.WriteFile(filePath, []byte(fileContent), 0644)
 	if err != nil {
 		return fmt.Errorf("error writing to tasks.md: %w", err)
 	}
