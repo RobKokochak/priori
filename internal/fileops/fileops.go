@@ -7,37 +7,33 @@ import (
 	"strings"
 
 	"github.com/RobKokochak/priori/internal/models"
+	"github.com/joho/godotenv"
 )
 
 // todo: allow user to set custom filename
-const TASKS_FILENAME = "tasks.md"
+const TASKS_FILENAME = "Tasks.md"
 
 type Config struct {
 	TasksFilePath string
 }
 
-var defaultConfig = Config{
-	TasksFilePath: "",
-}
+var currentConfig Config
 
-var currentConfig = defaultConfig
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Warning: .env file not found")
+	}
 
-// todo: allow users to set custom filepath
-func SetTasksFilePath(path string) error {
-	if path == "" {
-		return fmt.Errorf("tasks file path cannot be empty")
+	tasksPath := os.Getenv("TASKS_FILE_PATH")
+	currentConfig = Config{
+		TasksFilePath: tasksPath,
 	}
-	dir := filepath.Dir(path)
-	if _, err := os.Stat(dir); err != nil {
-		return fmt.Errorf("directory %s does not exist: %w", dir, err)
-	}
-	currentConfig.TasksFilePath = path
-	return nil
 }
 
 func getTasksFilePath() string {
 	if currentConfig.TasksFilePath != "" {
-		return currentConfig.TasksFilePath
+		return filepath.Join(currentConfig.TasksFilePath, TASKS_FILENAME)
 	}
 	return getDefaultTasksFilePath()
 }
@@ -59,13 +55,7 @@ func WriteTask(task string, priority models.Priority) error {
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("error reading tasks.md: %w", err)
 	}
-
-	var fileContent string
-	if len(content) == 0 || strings.TrimSpace(string(content)) == "" {
-		fileContent = "# Tasks\n"
-	} else {
-		fileContent = string(content)
-	}
+	fileContent := strings.TrimLeft(string(content), "\n\r\t ")
 
 	priorityHeadersOrdered := []struct {
 		priority models.Priority
@@ -101,7 +91,11 @@ func WriteTask(task string, priority models.Priority) error {
 
 		beforeSection := fileContent[:insertIndex]
 		afterSection := fileContent[insertIndex:]
-		fileContent = strings.TrimRight(beforeSection, "\n") + "\n" + targetHeader + "\n" + afterSection
+		if insertIndex == 0 {
+			fileContent = targetHeader + "\n" + afterSection
+		} else {
+			fileContent = strings.TrimRight(beforeSection, "\n") + "\n" + targetHeader + "\n" + afterSection
+		}
 	}
 
 	lines := strings.Split(fileContent, "\n")
@@ -121,7 +115,7 @@ func WriteTask(task string, priority models.Priority) error {
 		}
 	}
 
-	fileContent = strings.TrimRight(strings.Join(newLines, "\n"), "\n") + "\n"
+	fileContent = strings.TrimRight(strings.Join(newLines, "\n"), "\n")
 	err = os.WriteFile(filePath, []byte(fileContent), 0644)
 	if err != nil {
 		return fmt.Errorf("error writing to tasks.md: %w", err)

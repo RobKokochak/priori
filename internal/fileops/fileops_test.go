@@ -1,54 +1,13 @@
 package fileops
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/RobKokochak/priori/internal/models"
 )
-
-func TestSetTasksFilePath(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "priori-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	tests := []struct {
-		name    string
-		path    string
-		wantErr bool
-	}{
-		{
-			name:    "Valid path",
-			path:    filepath.Join(tmpDir, "tasks.md"),
-			wantErr: false,
-		},
-		{
-			name:    "Empty path",
-			path:    "",
-			wantErr: true,
-		},
-		{
-			name:    "Non-existent directory",
-			path:    filepath.Join(tmpDir, "nonexistent", "tasks.md"),
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := SetTasksFilePath(tt.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SetTasksFilePath() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !tt.wantErr && currentConfig.TasksFilePath != tt.path {
-				t.Errorf("SetTasksFilePath() didn't set the correct path, got = %v, want %v", currentConfig.TasksFilePath, tt.path)
-			}
-		})
-	}
-}
 
 func TestGetTasksFilePath(t *testing.T) {
 	originalConfig := currentConfig
@@ -57,10 +16,10 @@ func TestGetTasksFilePath(t *testing.T) {
 	}()
 
 	t.Run("Custom path set", func(t *testing.T) {
-		customPath := "/custom/path/tasks.md"
+		customPath := "/custom/path"
 		currentConfig.TasksFilePath = customPath
-		if got := getTasksFilePath(); got != customPath {
-			t.Errorf("getTasksFilePath() = %v, want %v", got, customPath)
+		if got := getTasksFilePath(); got != filepath.Join(customPath, TASKS_FILENAME) {
+			t.Errorf("getTasksFilePath() = %v, want %v", got, filepath.Join(customPath, TASKS_FILENAME))
 		}
 	})
 
@@ -80,13 +39,16 @@ func TestWriteTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
 
-	tasksFilePath := filepath.Join(tmpDir, "tasks.md")
-	err = SetTasksFilePath(tasksFilePath)
-	if err != nil {
-		t.Fatalf("Failed to set tasks file path: %v", err)
-	}
+	defer os.RemoveAll(tmpDir)
+	originalConfig := currentConfig
+	defer func() {
+		currentConfig = originalConfig
+	}()
+
+	// Set the tasks file path to the temporary directory
+	currentConfig.TasksFilePath = tmpDir
+	tasksFilePath := filepath.Join(tmpDir, TASKS_FILENAME)
 
 	tests := []struct {
 		name     string
@@ -97,35 +59,35 @@ func TestWriteTask(t *testing.T) {
 		verify   func(t *testing.T, content string)
 	}{
 		{
-			name:     "Write high priority task",
+			name:     "Write medium priority task",
 			task:     "Test task 1",
-			priority: models.HighPriority,
+			priority: models.MediumPriority,
 			wantErr:  false,
 			setup: func() {
 				os.Remove(tasksFilePath)
 			},
 			verify: func(t *testing.T, content string) {
-				expected := "# Tasks\n### High Priority\n- Test task 1\n"
+				expected := "### Medium Priority\n- Test task 1"
 				if content != expected {
-					t.Errorf("\nExpected content:\n%s\n\nGot:\n%s", expected, content)
+					t.Errorf("\nExpected content:\n%s\nGot:\n%s", expected, content)
 				}
 			},
 		},
 		{
-			name:     "Write medium priority task",
+			name:     "Write high priority task",
 			task:     "Test task 2",
-			priority: models.MediumPriority,
+			priority: models.HighPriority,
 			wantErr:  false,
 			verify: func(t *testing.T, content string) {
 				expected :=
-					`# Tasks
-### High Priority
-- Test task 1
-### Medium Priority
+					`### High Priority
 - Test task 2
-`
+### Medium Priority
+- Test task 1`
 				if content != expected {
-					t.Errorf("\nExpected content:\n%s\n\nGot:\n%s", expected, content)
+					fmt.Print("content----\n" + content)
+					fmt.Print("\nexpected----\n" + expected)
+					t.Errorf("\nExpected content:\n%s\nGot:\n%s", expected, content)
 				}
 			},
 		},
@@ -136,16 +98,14 @@ func TestWriteTask(t *testing.T) {
 			wantErr:  false,
 			verify: func(t *testing.T, content string) {
 				expected :=
-					`# Tasks
-### High Priority
-- Test task 1
-### Medium Priority
+					`### High Priority
 - Test task 2
+### Medium Priority
+- Test task 1
 ### Low Priority
-- Test task 3
-`
+- Test task 3`
 				if content != expected {
-					t.Errorf("\nExpected content:\n%s\n\nGot:\n%s", expected, content)
+					t.Errorf("\nExpected content:\n%s\nGot:\n%s", expected, content)
 				}
 			},
 		},
@@ -156,17 +116,15 @@ func TestWriteTask(t *testing.T) {
 			wantErr:  false,
 			verify: func(t *testing.T, content string) {
 				expected :=
-					`# Tasks
-### High Priority
-- Test task 1
+					`### High Priority
+- Test task 2
 ### Medium Priority
 - Test task 4
-- Test task 2
+- Test task 1
 ### Low Priority
-- Test task 3
-`
+- Test task 3`
 				if content != expected {
-					t.Errorf("\nExpected content:\n%s\n\nGot:\n%s", expected, content)
+					t.Errorf("\nExpected content:\n%s\nGot:\n%s", expected, content)
 				}
 			},
 		},
@@ -177,18 +135,16 @@ func TestWriteTask(t *testing.T) {
 			wantErr:  false,
 			verify: func(t *testing.T, content string) {
 				expected :=
-					`# Tasks
-### High Priority
+					`### High Priority
 - Test task 5
-- Test task 1
+- Test task 2
 ### Medium Priority
 - Test task 4
-- Test task 2
+- Test task 1
 ### Low Priority
-- Test task 3
-`
+- Test task 3`
 				if content != expected {
-					t.Errorf("\nExpected content:\n%s\n\nGot:\n%s", expected, content)
+					t.Errorf("\nExpected content:\n%s\nGot:\n%s", expected, content)
 				}
 			},
 		},
