@@ -12,6 +12,46 @@ import (
 // todo: allow user to set custom filename
 const TASKS_FILENAME = "tasks.md"
 
+type Config struct {
+	TasksFilePath string
+}
+
+var defaultConfig = Config{
+	TasksFilePath: "",
+}
+
+var currentConfig = defaultConfig
+
+// todo: allow users to set custom filepath
+func SetTasksFilePath(path string) error {
+	if path == "" {
+		return fmt.Errorf("tasks file path cannot be empty")
+	}
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); err != nil {
+		return fmt.Errorf("directory %s does not exist: %w", dir, err)
+	}
+	currentConfig.TasksFilePath = path
+	return nil
+}
+
+func getTasksFilePath() string {
+	if currentConfig.TasksFilePath != "" {
+		return currentConfig.TasksFilePath
+	}
+	return getDefaultTasksFilePath()
+}
+
+func getDefaultTasksFilePath() string {
+	homeDir, err := os.UserHomeDir()
+	// if home isn't found, just use the current directory
+	if err != nil {
+		return TASKS_FILENAME
+	}
+	return filepath.Join(homeDir, TASKS_FILENAME)
+}
+
+// todo: allow user to set if task should go at top or bottom of section
 func WriteTask(task string, priority models.Priority) error {
 	filePath := getTasksFilePath()
 
@@ -31,10 +71,10 @@ func WriteTask(task string, priority models.Priority) error {
 		priority models.Priority
 		header   string
 	}{
-		{models.HighPriority, "## High Priority"},
-		{models.MediumPriority, "## Medium Priority"},
-		{models.LowPriority, "## Low Priority"},
-		{models.NoPriority, "## No Priority"},
+		{models.HighPriority, "### High Priority"},
+		{models.MediumPriority, "### Medium Priority"},
+		{models.LowPriority, "### Low Priority"},
+		{models.NoPriority, "### No Priority"},
 	}
 
 	targetHeader := ""
@@ -61,7 +101,7 @@ func WriteTask(task string, priority models.Priority) error {
 
 		beforeSection := fileContent[:insertIndex]
 		afterSection := fileContent[insertIndex:]
-		fileContent = strings.TrimRight(beforeSection, "\n") + "\n\n" + targetHeader + "\n\n" + afterSection
+		fileContent = strings.TrimRight(beforeSection, "\n") + "\n" + targetHeader + "\n" + afterSection
 	}
 
 	lines := strings.Split(fileContent, "\n")
@@ -88,21 +128,4 @@ func WriteTask(task string, priority models.Priority) error {
 	}
 
 	return nil
-}
-
-func getTasksFilePath() string {
-	// todo: allow user to set custom file path for tasks.md
-	customPath := ""
-	if customPath != "" {
-		return customPath
-	}
-	return getDefaultTasksFilePath()
-}
-
-func getDefaultTasksFilePath() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return TASKS_FILENAME
-	}
-	return filepath.Join(homeDir, TASKS_FILENAME)
 }

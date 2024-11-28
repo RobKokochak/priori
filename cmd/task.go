@@ -20,7 +20,7 @@ func init() {
 }
 
 var taskCmd = &cobra.Command{
-	Use:   `task "task description"`,
+	Use:   `task "[description]"`,
 	Short: "Create a new task",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 || strings.TrimSpace(args[0]) == "" {
