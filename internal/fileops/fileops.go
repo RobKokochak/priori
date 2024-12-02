@@ -64,7 +64,7 @@ func WriteTask(task string, priority models.Priority) error {
 		{models.HighPriority, "### High Priority"},
 		{models.MediumPriority, "### Medium Priority"},
 		{models.LowPriority, "### Low Priority"},
-		{models.NoPriority, "### No Priority"},
+		{models.NoPriority, "### ~"},
 	}
 
 	targetHeader := ""
