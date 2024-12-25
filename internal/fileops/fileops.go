@@ -1,6 +1,7 @@
 package fileops
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,7 +12,10 @@ import (
 )
 
 // todo: allow user to set custom filename
-const TASKS_FILENAME = "Tasks.md"
+const TASKS_FILENAME = "/Tasks.md"
+
+// todo: make config a json in .configs
+const configFileName = "priori_config.txt"
 
 type Config struct {
 	TasksFilePath string
@@ -31,20 +35,102 @@ func init() {
 	}
 }
 
-func getTasksFilePath() string {
-	if currentConfig.TasksFilePath != "" {
-		return filepath.Join(currentConfig.TasksFilePath, TASKS_FILENAME)
+func getPathToConfig() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("Error getting home directory: ", err)
+		return ""
 	}
-	return getDefaultTasksFilePath()
+	return filepath.Join(homeDir, configFileName)
 }
 
-func getDefaultTasksFilePath() string {
-	homeDir, err := os.UserHomeDir()
-	// if home isn't found, just use the current directory
-	if err != nil {
-		return TASKS_FILENAME
+func HasValidPath() bool {
+	configPath := getPathToConfig()
+
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return false
 	}
-	return filepath.Join(homeDir, TASKS_FILENAME)
+
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return false
+	}
+
+	path := strings.TrimSpace(string(content))
+
+	absPath, err := expandPath(path)
+	if err != nil {
+		return false
+	}
+
+	// Verify the path exists
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
+func expandPath(path string) (string, error) {
+	if strings.HasPrefix(path, "~") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		path = filepath.Join(homeDir, path[1:])
+	}
+	return filepath.Abs(path)
+}
+
+func PromptForPath() string {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Print("Please enter the location where you want to store Tasks.md: ")
+		path, _ := reader.ReadString('\n')
+
+		path = strings.TrimSpace(path)
+
+		if path == "/" {
+			fmt.Println("Cannot use root directory (/). Please choose another location.")
+			continue
+		}
+
+		absPath, err := expandPath(path)
+		if err != nil {
+			fmt.Println("Error getting absolute path: ", err)
+			continue
+		}
+
+		if absPath == "/" {
+			fmt.Println("Cannot use root directory (/). Please choose another location.")
+			continue
+		}
+
+		if _, err := os.Stat(absPath); !os.IsNotExist(err) {
+			return absPath
+		}
+
+		fmt.Println("Invalid path. Please enter a valid directory path.")
+	}
+}
+
+func SavePath(path string) error {
+	configPath := getPathToConfig()
+
+	return os.WriteFile(configPath, []byte(path), 0644)
+}
+
+func getTasksFilePath() string {
+	configPath := getPathToConfig()
+
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return ""
+	}
+
+	// todo: allow user to set filename
+	return strings.TrimSpace(string(content) + TASKS_FILENAME)
 }
 
 // todo: allow user to set if task should go at top or bottom of section
