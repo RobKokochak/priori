@@ -28,7 +28,7 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "priori",
+	Use:   "priori [task]",
 	Short: "A CLI task manager with dynamic priority setting and ordering via flags, built to be fast and efficient.",
 	Long:  `Priori is a dynamic task manager.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -41,13 +41,10 @@ var rootCmd = &cobra.Command{
 		if len(args) < 1 || strings.TrimSpace(args[0]) == "" {
 			return fmt.Errorf("Requires a task description")
 		}
-		if len(args) > 1 {
-			return fmt.Errorf("Only one quote-wrapped task is allowed")
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		task := args[0]
+		task := strings.Join(args, " ")
 		priority, getPriorityErr := cmdops.GetPriority(cmd.Flags())
 
 		if getPriorityErr != nil {
