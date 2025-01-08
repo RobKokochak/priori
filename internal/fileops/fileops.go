@@ -16,17 +16,45 @@ const TASKS_FILENAME = "/Tasks.md"
 // todo: make config a json in .configs
 const configFileName = "priori_config.txt"
 
-func getPathToConfig() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Println("Error getting home directory: ", err)
+func getConfigFilePath() string {
+	homeDir, homeDirErr := os.UserHomeDir()
+	if homeDirErr != nil {
+		fmt.Println("Error getting config: ", homeDirErr)
 		return ""
 	}
-	return filepath.Join(homeDir, configFileName)
+	configPath := filepath.Join(homeDir, ".config", "priori")
+	if err := os.MkdirAll(configPath, 0755); err != nil {
+		fmt.Println("Error creating config directory: ", err)
+		return ""
+	}
+	return filepath.Join(configPath, configFileName)
+}
+
+func validatePath(path string) (string, error) {
+	path = strings.TrimSpace(path)
+
+	if path == "/" {
+		return "", fmt.Errorf("cannot use root directory (/)")
+	}
+
+	absPath, err := expandPath(path)
+	if err != nil {
+		return "", fmt.Errorf("error getting absolute path: %w", err)
+	}
+
+	if absPath == "/" {
+		return "", fmt.Errorf("cannot use root directory (/)")
+	}
+
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("directory does not exist: %s", absPath)
+	}
+
+	return absPath, nil
 }
 
 func HasValidPath() bool {
-	configPath := getPathToConfig()
+	configPath := getConfigFilePath()
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return false
@@ -65,45 +93,32 @@ func expandPath(path string) (string, error) {
 
 func PromptForPath() string {
 	reader := bufio.NewReader(os.Stdin)
-
 	for {
-		fmt.Print("Please enter the location where you want to store Tasks.md: ")
+		fmt.Print("Enter the location where you want to store Tasks.md: ")
 		path, _ := reader.ReadString('\n')
 
-		path = strings.TrimSpace(path)
-
-		if path == "/" {
-			fmt.Println("Cannot use root directory (/). Please choose another location.")
-			continue
-		}
-
-		absPath, err := expandPath(path)
+		absPath, err := validatePath(path)
 		if err != nil {
-			fmt.Println("Error getting absolute path: ", err)
+			fmt.Printf("Invalid path: %v\nPlease enter a valid directory path.\n", err)
 			continue
 		}
 
-		if absPath == "/" {
-			fmt.Println("Cannot use root directory (/). Please choose another location.")
-			continue
-		}
-
-		if _, err := os.Stat(absPath); !os.IsNotExist(err) {
-			return absPath
-		}
-
-		fmt.Println("Invalid path. Please enter a valid directory path.")
+		return absPath
 	}
 }
 
-func SaveTasksFilePath(tasksFilePath string) error {
-	configPath := getPathToConfig()
+func SetTasksFilePath(tasksFilePath string) error {
+	absPath, err := validatePath(tasksFilePath)
+	if err != nil {
+		return err
+	}
+	configPath := getConfigFilePath()
 
-	return os.WriteFile(configPath, []byte(tasksFilePath), 0644)
+	return os.WriteFile(configPath, []byte(absPath), 0644)
 }
 
 func GetTasksFilePath() (string, error) {
-	configPath := getPathToConfig()
+	configPath := getConfigFilePath()
 
 	content, err := os.ReadFile(configPath)
 	if err != nil {

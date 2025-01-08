@@ -20,10 +20,10 @@ var setPathCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tasksFilePath := args[0]
-		if err := fileops.SaveTasksFilePath(tasksFilePath); err != nil {
+		if err := fileops.SetTasksFilePath(tasksFilePath); err != nil {
 			return err
 		}
-		fmt.Printf("Successfully set tasks path to: %s\n", tasksFilePath)
+		fmt.Printf("Successfully set tasks path to: %s\n", tasksFilePath+fileops.TASKS_FILENAME)
 		return nil
 	},
 }
