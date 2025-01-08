@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if !fileops.HasValidPath() {
 			path := fileops.PromptForPath()
-			fileops.SavePath(path)
+			fileops.SaveTasksFilePath(path)
 		}
 	},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -51,7 +51,12 @@ var rootCmd = &cobra.Command{
 			return getPriorityErr
 		}
 
-		writeTaskErr := fileops.WriteTask(task, priority)
+		filePath, getTaskFilePathErr := fileops.GetTasksFilePath()
+		if getTaskFilePathErr != nil {
+			return getTaskFilePathErr
+		}
+
+		writeTaskErr := fileops.WriteTask(task, priority, filePath)
 		if writeTaskErr != nil {
 			return writeTaskErr
 		}

@@ -9,45 +9,14 @@ import (
 	"github.com/RobKokochak/priori/internal/models"
 )
 
-func TestGetTasksFilePath(t *testing.T) {
-	originalConfig := currentConfig
-	defer func() {
-		currentConfig = originalConfig
-	}()
-
-	t.Run("Custom path set", func(t *testing.T) {
-		customPath := "/custom/path"
-		currentConfig.TasksFilePath = customPath
-		if got := getTasksFilePath(); got != filepath.Join(customPath, TASKS_FILENAME) {
-			t.Errorf("getTasksFilePath() = %v, want %v", got, filepath.Join(customPath, TASKS_FILENAME))
-		}
-	})
-
-	t.Run("Default path", func(t *testing.T) {
-		currentConfig.TasksFilePath = ""
-		got := getTasksFilePath()
-		homeDir, _ := os.UserHomeDir()
-		expected := filepath.Join(homeDir, TASKS_FILENAME)
-		if got != expected {
-			t.Errorf("getTasksFilePath() = %v, want %v", got, expected)
-		}
-	})
-}
-
 func TestWriteTask(t *testing.T) {
+	// Create a temporary directory for the test
 	tmpDir, err := os.MkdirTemp("", "priori-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-
 	defer os.RemoveAll(tmpDir)
-	originalConfig := currentConfig
-	defer func() {
-		currentConfig = originalConfig
-	}()
 
-	// Set the tasks file path to the temporary directory
-	currentConfig.TasksFilePath = tmpDir
 	tasksFilePath := filepath.Join(tmpDir, TASKS_FILENAME)
 
 	tests := []struct {
@@ -63,9 +32,6 @@ func TestWriteTask(t *testing.T) {
 			task:     "Test task 1",
 			priority: models.MediumPriority,
 			wantErr:  false,
-			setup: func() {
-				os.Remove(tasksFilePath)
-			},
 			verify: func(t *testing.T, content string) {
 				expected := "### Medium Priority\n- Test task 1"
 				if content != expected {
@@ -156,7 +122,7 @@ func TestWriteTask(t *testing.T) {
 				tt.setup()
 			}
 
-			err := WriteTask(tt.task, tt.priority)
+			err := WriteTask(tt.task, tt.priority, tasksFilePath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("WriteTask() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/RobKokochak/priori/internal/models"
-	"github.com/joho/godotenv"
 )
 
 // todo: allow user to set custom filename
@@ -16,24 +15,6 @@ const TASKS_FILENAME = "/Tasks.md"
 
 // todo: make config a json in .configs
 const configFileName = "priori_config.txt"
-
-type Config struct {
-	TasksFilePath string
-}
-
-var currentConfig Config
-
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Warning: .env file not found")
-	}
-
-	tasksPath := os.Getenv("TASKS_FILE_PATH")
-	currentConfig = Config{
-		TasksFilePath: tasksPath,
-	}
-}
 
 func getPathToConfig() string {
 	homeDir, err := os.UserHomeDir()
@@ -115,27 +96,26 @@ func PromptForPath() string {
 	}
 }
 
-func SavePath(path string) error {
+func SaveTasksFilePath(tasksFilePath string) error {
 	configPath := getPathToConfig()
 
-	return os.WriteFile(configPath, []byte(path), 0644)
+	return os.WriteFile(configPath, []byte(tasksFilePath), 0644)
 }
 
-func getTasksFilePath() string {
+func GetTasksFilePath() (string, error) {
 	configPath := getPathToConfig()
 
 	content, err := os.ReadFile(configPath)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	// todo: allow user to set filename
-	return strings.TrimSpace(string(content) + TASKS_FILENAME)
+	return strings.TrimSpace(string(content) + TASKS_FILENAME), nil
 }
 
 // todo: allow user to set if task should go at top or bottom of section
-func WriteTask(task string, priority models.Priority) error {
-	filePath := getTasksFilePath()
+func WriteTask(task string, priority models.Priority, filePath string) error {
 
 	content, err := os.ReadFile(filePath)
 	if err != nil && !os.IsNotExist(err) {
