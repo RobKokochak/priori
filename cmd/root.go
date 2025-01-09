@@ -15,10 +15,22 @@ import (
 
 func init() {
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
-	rootCmd.Flags().BoolP("help", "", false, "Help for the task command")
-	rootCmd.Flags().BoolP("high", "h", false, "Marks the task as a high priority")
-	rootCmd.Flags().BoolP("medium", "m", false, "Marks the task as a medium priority")
-	rootCmd.Flags().BoolP("low", "l", false, "Marks the task as a low priority")
+	rootCmd.PersistentFlags().BoolP("help", "", false, "Help for the task command")
+	rootCmd.PersistentFlags().BoolP("high", "h", false, "Marks the task as a high priority")
+	rootCmd.PersistentFlags().BoolP("medium", "m", false, "Marks the task as a medium priority")
+	rootCmd.PersistentFlags().BoolP("low", "l", false, "Marks the task as a low priority")
+
+	rootCmd.Args = func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 || strings.TrimSpace(args[0]) == "" {
+			return fmt.Errorf("Requires a task description")
+		}
+
+		if len(args) > 1 && args[0] == "list" {
+			cmd.SetArgs([]string{strings.Join(args, " ")})
+			return nil
+		}
+		return nil
+	}
 }
 
 var rootCmd = &cobra.Command{
@@ -35,6 +47,10 @@ var rootCmd = &cobra.Command{
 		if len(args) < 1 || strings.TrimSpace(args[0]) == "" {
 			return fmt.Errorf("Requires a task description")
 		}
+		if len(args) == 1 && args[0] == "list" {
+			return cobra.MinimumNArgs(0)(cmd, args)
+		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {

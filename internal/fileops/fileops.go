@@ -213,8 +213,138 @@ func ReadTasks(filePath string) (string, error) {
 		}
 		return "", fmt.Errorf("error retrieving tasks: %w", err)
 	}
-	if len(content) == 0 {
-		return "No tasks in list", nil
+
+	if isTasksFileEmpty(string(content)) {
+		return "Tasks file is empty", nil
 	}
+
 	return string(content), nil
+}
+
+func DeleteTask(filePath string, priority models.Priority, index string) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading tasks file: %w", err)
+	}
+
+	if isTasksFileEmpty(string(content)) {
+		return fmt.Errorf("Tasks file is empty")
+	}
+
+	lines := strings.Split(string(content), "\n")
+	var newLines []string
+
+	var targetHeader string
+	switch priority {
+	case models.HighPriority:
+		targetHeader = "### High Priority"
+	case models.MediumPriority:
+		targetHeader = "### Medium Priority"
+	case models.LowPriority:
+		targetHeader = "### Low Priority"
+	case models.NoPriority:
+		targetHeader = "### ~"
+	default:
+		return fmt.Errorf("invalid priority")
+	}
+
+	inTargetSection := false
+	taskIndex := 0
+	targetIndex := index
+	sectionHasTasks := false
+	taskFound := false
+
+	// First pass: count tasks and check if target exists
+	for _, line := range lines {
+		if line == targetHeader {
+			inTargetSection = true
+			continue
+		}
+
+		if inTargetSection {
+			if strings.HasPrefix(line, "### ") {
+				inTargetSection = false
+				continue
+			}
+			if strings.HasPrefix(line, "- ") {
+				if fmt.Sprint(taskIndex) == targetIndex {
+					taskFound = true
+				} else {
+					sectionHasTasks = true
+				}
+				taskIndex++
+			}
+		}
+	}
+
+	if !taskFound {
+		return fmt.Errorf("task not found at index %s in %s priority section", targetIndex, priority)
+	}
+
+	// Reset for second pass
+	inTargetSection = false
+	taskIndex = 0
+
+	// Second pass: build new content
+	for _, line := range lines {
+		if line == targetHeader {
+			inTargetSection = true
+			if sectionHasTasks {
+				newLines = append(newLines, line)
+			}
+			continue
+		}
+
+		if inTargetSection {
+			if strings.HasPrefix(line, "### ") {
+				inTargetSection = false
+				newLines = append(newLines, line)
+				continue
+			}
+			if strings.HasPrefix(line, "- ") {
+				if fmt.Sprint(taskIndex) != targetIndex {
+					newLines = append(newLines, line)
+				}
+				taskIndex++
+				continue
+			}
+		}
+
+		if !inTargetSection {
+			newLines = append(newLines, line)
+		}
+	}
+
+	var cleanLines []string
+	prevLineEmpty := false
+	for _, line := range newLines {
+		if line == "" {
+			if !prevLineEmpty {
+				cleanLines = append(cleanLines, line)
+			}
+			prevLineEmpty = true
+		} else {
+			cleanLines = append(cleanLines, line)
+			prevLineEmpty = false
+		}
+	}
+
+	for len(cleanLines) > 0 && cleanLines[len(cleanLines)-1] == "" {
+		cleanLines = cleanLines[:len(cleanLines)-1]
+	}
+
+	// Write the modified content back to the file
+	err = os.WriteFile(filePath, []byte(strings.Join(cleanLines, "\n")+"\n"), 0644)
+	if err != nil {
+		return fmt.Errorf("error writing to tasks file: %w", err)
+	}
+
+	return nil
+}
+
+func isTasksFileEmpty(content string) bool {
+	if len(content) == 0 || len(strings.TrimSpace(string(content))) == 0 {
+		return true
+	}
+	return false
 }
