@@ -199,8 +199,22 @@ func WriteTask(task string, priority models.Priority, filePath string) error {
 	fileContent = strings.TrimRight(strings.Join(newLines, "\n"), "\n")
 	err = os.WriteFile(filePath, []byte(fileContent), 0644)
 	if err != nil {
-		return fmt.Errorf("error writing to tasks.md: %w", err)
+		return fmt.Errorf("error writing to tasks file: %w", err)
 	}
 
 	return nil
+}
+
+func ReadTasks(filePath string) (string, error) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "Tasks file not found", nil
+		}
+		return "", fmt.Errorf("error retrieving tasks: %w", err)
+	}
+	if len(content) == 0 {
+		return "No tasks in list", nil
+	}
+	return string(content), nil
 }

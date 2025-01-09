@@ -7,6 +7,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	rootCmd.AddCommand(configCmd)
+	configCmd.AddCommand(setPathCmd)
+	configCmd.AddCommand(getPathCmd)
+}
+
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Configure priori settings",
@@ -41,10 +47,4 @@ var getPathCmd = &cobra.Command{
 		fmt.Printf("Current tasks path: %s\n", tasksFilePath)
 		return nil
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(configCmd)
-	configCmd.AddCommand(setPathCmd)
-	configCmd.AddCommand(getPathCmd)
 }

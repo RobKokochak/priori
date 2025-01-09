@@ -13,14 +13,8 @@ import (
 	"github.com/RobKokochak/priori/internal/fileops"
 )
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
-}
-
 func init() {
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 	rootCmd.Flags().BoolP("help", "", false, "Help for the task command")
 	rootCmd.Flags().BoolP("high", "h", false, "Marks the task as a high priority")
 	rootCmd.Flags().BoolP("medium", "m", false, "Marks the task as a medium priority")
@@ -64,4 +58,11 @@ var rootCmd = &cobra.Command{
 		fmt.Println("Task added")
 		return nil
 	},
+}
+
+func Execute() {
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
 }
