@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/RobKokochak/priori/internal/fileops"
 	"github.com/spf13/cobra"
@@ -17,6 +19,15 @@ var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Configure priori settings",
 	Long:  `Configure various settings for priori, such as the path to the tasks file`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		validCommands := []string{"set-path", "get-path"}
+		if len(args) > 0 && !slices.Contains(validCommands, args[0]) {
+			fullTask := "config " + strings.Join(args, " ")
+			return cmd.Parent().RunE(cmd.Parent(), []string{fullTask})
+		}
+
+		return cmd.Help()
+	},
 }
 
 var setPathCmd = &cobra.Command{

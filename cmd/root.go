@@ -15,6 +15,7 @@ import (
 
 func init() {
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	rootCmd.PersistentFlags().BoolP("help", "", false, "Help for the task command")
 	rootCmd.PersistentFlags().BoolP("high", "h", false, "Marks the task as a high priority")
 	rootCmd.PersistentFlags().BoolP("medium", "m", false, "Marks the task as a medium priority")
