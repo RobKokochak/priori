@@ -1,1 +1,1 @@
-A CLI task manager with dynamic priority setting and ordering, built to be fast and efficient.
+A command-line task manager with priority setting via flags, built for CLI-based workflows.
