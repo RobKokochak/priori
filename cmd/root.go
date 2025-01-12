@@ -35,8 +35,8 @@ func init() {
 
 var rootCmd = &cobra.Command{
 	Use:   "priori [task]",
-	Short: "A CLI task manager with dynamic priority setting and ordering via flags, built to be fast and efficient.",
-	Long:  `Priori is a dynamic task manager.`,
+	Short: "A command-line task manager with priority setting via flags, built for CLI-based workflows.",
+	Long:  `A command-line task manager with priority setting via flags, built for CLI-based workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if !fileops.HasValidPath() {
 			path := fileops.PromptForPath()
