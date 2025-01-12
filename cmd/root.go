@@ -22,6 +22,11 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("low", "l", false, "Marks the task as a low priority")
 
 	rootCmd.Args = func(cmd *cobra.Command, args []string) error {
+		if !fileops.HasValidPath() {
+			path := fileops.PromptForPath()
+			fileops.SetTasksFilePath(path)
+		}
+
 		if len(args) < 1 || strings.TrimSpace(args[0]) == "" {
 			return fmt.Errorf("Requires a task description")
 		}
