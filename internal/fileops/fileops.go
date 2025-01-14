@@ -32,6 +32,7 @@ func getConfigFilePath() string {
 
 func validatePath(path string) (string, error) {
 	path = strings.TrimSpace(path)
+	path = strings.ReplaceAll(path, `\ `, ` `)
 
 	if path == "/" {
 		return "", fmt.Errorf("cannot use root directory (/)")
