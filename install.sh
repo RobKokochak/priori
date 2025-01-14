@@ -2,15 +2,8 @@
 
 set -e
 
-# Determine OS and architecture
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+OS=$(uname -s)
 ARCH=$(uname -m)
-
-# Convert architecture names
-case $ARCH in
-    x86_64) ARCH="amd64" ;;
-    aarch64) ARCH="arm64" ;;
-esac
 
 VERSION=$(curl -s https://api.github.com/repos/robkokochak/priori/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/v//')
 BINARY_NAME="priori_${OS}_${ARCH}.tar.gz"
@@ -25,8 +18,20 @@ cleanup() {
 trap cleanup EXIT
 
 curl -L -s "$DOWNLOAD_URL" -o "$TMP_DIR/${BINARY_NAME}"
+
+if [ ! -f "$TMP_DIR/${BINARY_NAME}" ]; then
+    echo "Error: Download failed"
+    exit 1
+fi
+
 tar -xzf "$TMP_DIR/${BINARY_NAME}" -C "$TMP_DIR"
 
+if [ ! -f "$TMP_DIR/priori" ]; then
+    echo "Error: Extraction failed or binary not found"
+    exit 1
+fi
+
 sudo mv "$TMP_DIR/priori" /usr/local/bin/priori
+sudo chmod +x /usr/local/bin/priori
 
 echo "priori installed successfully"
